@@ -18,7 +18,7 @@ class BatteryTrayApp
 
         trayIcon = new NotifyIcon()
         {
-            Icon = SystemIcons.Information,
+            Icon = new Icon("battery-bolt.ico"),
             Visible = true,
             Text = "Android Battery: Unknown"
         };

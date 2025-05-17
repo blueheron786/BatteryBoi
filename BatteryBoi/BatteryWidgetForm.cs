@@ -20,7 +20,7 @@ public class BatteryWidgetForm : Form
         FormBorderStyle = FormBorderStyle.None;
         TopMost = true;
         BackColor = Color.Black;
-        ForeColor = Color.LimeGreen;
+        ForeColor = Color.FromArgb(255, 207, 72);
         Opacity = 0.85;
         StartPosition = FormStartPosition.Manual;
         Location = new Point(100, 100);
@@ -32,7 +32,7 @@ public class BatteryWidgetForm : Form
             Dock = DockStyle.Fill,
             Font = new Font("Segoe UI", 14, FontStyle.Bold),
             TextAlign = ContentAlignment.MiddleCenter,
-            ForeColor = Color.LimeGreen,
+            ForeColor = ForeColor,
             BackColor = Color.Black
         };
 
