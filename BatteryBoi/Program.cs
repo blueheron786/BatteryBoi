@@ -6,9 +6,16 @@ namespace BatteryBoi;
 
 class BatteryTrayApp
 {
-    static NotifyIcon trayIcon;
-    static Timer pollTimer;
-    static BatteryWidgetForm widgetForm;
+    private const int WarnAtChargePercent = 80;
+    private const int BlinkInterval = 500;
+
+    private static NotifyIcon s_trayIcon;
+    private static Timer s_pollTimer;
+    private static Timer s_blinkTimer;
+    private static BatteryWidgetForm s_widgetForm;
+
+    private static Icon s_chargingIcon;
+    private static Icon s__warningIconIcon;
 
     [STAThread]
     static void Main()
@@ -16,30 +23,46 @@ class BatteryTrayApp
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
 
-        trayIcon = new NotifyIcon()
-        {
-            Icon = new Icon("battery-bolt.ico"),
-            Visible = true,
-            Text = "Android Battery: Unknown"
-        };
+        s_chargingIcon = new Icon("assets/battery-bolt.ico");
+        s__warningIconIcon = new Icon("assets/battery-exclamation.ico");
 
         var contextMenu = new ContextMenuStrip();
         contextMenu.Items.Add("Exit", null, (s, e) =>
         {
-            trayIcon.Visible = false;
-            widgetForm?.Close();
+            s_trayIcon.Visible = false;
+            s_widgetForm?.Close();
             Application.Exit();
         });
 
-        trayIcon.ContextMenuStrip = contextMenu;
+        s_trayIcon = new NotifyIcon()
+        {
+            Icon = s_chargingIcon,
+            ContextMenuStrip = contextMenu,
+            Visible = true,
+            Text = "Battery Boi",
+        };
 
-        widgetForm = new BatteryWidgetForm();
-        widgetForm.Show();
+        s_widgetForm = new BatteryWidgetForm();
+        s_widgetForm.Show();
 
-        pollTimer = new Timer();
-        pollTimer.Interval = 10_000;
-        pollTimer.Tick += (s, e) => UpdateBattery();
-        pollTimer.Start();
+        s_pollTimer = new Timer();
+        s_pollTimer.Interval = 10_000;
+        s_pollTimer.Tick += (s, e) => UpdateBattery();
+        s_pollTimer.Start();
+
+        s_blinkTimer = new Timer();
+        s_blinkTimer.Interval = BlinkInterval;
+        s_blinkTimer.Tick += (s, e) =>
+        {
+            if (s_trayIcon.Icon == s__warningIconIcon)
+            {
+                s_trayIcon.Icon = s_chargingIcon;
+            }
+            else
+            {
+                s_trayIcon.Icon = s__warningIconIcon;
+            }
+        };            
 
         UpdateBattery();
         Application.Run();
@@ -54,19 +77,33 @@ class BatteryTrayApp
             if (match.Success)
             {
                 var level = match.Groups[1].Value;
-                trayIcon.Text = $"Android Battery: {level}%";
-                widgetForm.BatteryLabel.Text = $"Battery: {level}%";
+                if (int.Parse(level) < WarnAtChargePercent)
+                {
+                    s_blinkTimer.Stop();
+                    s_trayIcon.Text = $"Android Battery: {level}%";
+                    s_widgetForm.BatteryLabel.Text = $"Battery: {level}%";
+                }
+                else
+                {
+                    if (!s_blinkTimer.Enabled)
+                    {
+                        s_blinkTimer.Start();
+                    }
+                    s_widgetForm.BatteryLabel.ForeColor = Color.Red;
+                    s_trayIcon.Text = $"Sufficiently charged: {level}%";
+                    s_widgetForm.BatteryLabel.Text = $"Charged: {level}%";
+                }
             }
             else
             {
-                trayIcon.Text = "Battery info not found";
-                widgetForm.BatteryLabel.Text = $"Battery: --";
+                s_trayIcon.Text = "Battery info not found";
+                s_widgetForm.BatteryLabel.Text = $"Battery: --";
             }
         }
         catch
         {
-            trayIcon.Text = "ADB error / phone not connected";
-            widgetForm.BatteryLabel.Text = $"Disconnected";
+            s_trayIcon.Text = "ADB error / phone not connected";
+            s_widgetForm.BatteryLabel.Text = $"Disconnected";
         }
     }
 
