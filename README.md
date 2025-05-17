@@ -4,6 +4,13 @@ Ever leave your Android phone plugged in and charging and not realized it crosse
 
 Me, too. So I made a little tray icon + draggable form that reports your phone battery percentage when connected.
 
-Updates every 10 seconds.
+The tray icon and form tell you:
+- Your phone is charging
+- Your phone is 80%+ charged, and you should stop charging
+- Your phone is disconnected, or an error occurred
+
+Includes ADB, so just unpack the `.zip` and run it.
+
+UI updates every 10 seconds.
 
 Made with love in C# and Windows Forms.
