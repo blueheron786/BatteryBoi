@@ -14,8 +14,10 @@ class BatteryTrayApp
     private static Timer s_blinkTimer;
     private static BatteryWidgetForm s_widgetForm;
 
-    private static Icon s_chargingIcon;
-    private static Icon s__warningIconIcon;
+    // Icons for various states
+    private static Icon s_chargingIcon = new Icon("assets/battery-bolt.ico");
+    private static Icon s__warningIconIcon = new Icon("assets/battery-exclamation.ico");
+    private static Icon s_disconnectedIcon = new Icon("assets/plug.ico");
 
     [STAThread]
     static void Main()
@@ -96,14 +98,21 @@ class BatteryTrayApp
             }
             else
             {
+                if (s_blinkTimer.Enabled)
+                {
+                    s_blinkTimer.Stop();
+                }
+                s_trayIcon.Icon = s_disconnectedIcon;
                 s_trayIcon.Text = "Battery info not found";
                 s_widgetForm.BatteryLabel.Text = $"Battery: --";
             }
         }
-        catch
+        catch (Exception ex)
         {
+            s_trayIcon.Icon = s_disconnectedIcon;
             s_trayIcon.Text = "ADB error / phone not connected";
             s_widgetForm.BatteryLabel.Text = $"Disconnected";
+            Console.WriteLine($"Error: {ex.Message}");
         }
     }
 
