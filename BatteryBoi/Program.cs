@@ -1,5 +1,3 @@
-using System.Diagnostics;
-using System.Text.RegularExpressions;
 using Timer = System.Windows.Forms.Timer;
 
 namespace BatteryBoi;
@@ -13,6 +11,11 @@ class BatteryTrayApp
     private static Timer s_pollTimer;
     private static Timer s_blinkTimer;
     private static BatteryWidgetForm s_widgetForm;
+
+    private static AdbBatteryMonitor s_monitor = new AdbBatteryMonitor
+    {
+        WarnAtChargePercent = 80
+    };
 
     // Icons for various states
     private static Icon s_chargingIcon = new Icon("assets/battery-bolt.ico");
@@ -38,7 +41,7 @@ class BatteryTrayApp
 
         s_trayIcon = new NotifyIcon()
         {
-            Icon = s_chargingIcon,
+            Icon = s_disconnectedIcon,
             ContextMenuStrip = contextMenu,
             Visible = true,
             Text = "Battery Boi",
@@ -46,11 +49,6 @@ class BatteryTrayApp
 
         s_widgetForm = new BatteryWidgetForm();
         s_widgetForm.Show();
-
-        s_pollTimer = new Timer();
-        s_pollTimer.Interval = 10_000;
-        s_pollTimer.Tick += (s, e) => UpdateBattery();
-        s_pollTimer.Start();
 
         s_blinkTimer = new Timer();
         s_blinkTimer.Interval = BlinkInterval;
@@ -66,73 +64,57 @@ class BatteryTrayApp
             }
         };            
 
-        UpdateBattery();
-        Application.Run();
-    }
-
-    static void UpdateBattery()
-    {
-        try
+        s_monitor.DeviceConnected += () =>
         {
-            var output = RunAdb("shell dumpsys battery");
-            var match = Regex.Match(output, @"level: (\d+)");
-            if (match.Success)
+            s_trayIcon.Icon = s_chargingIcon;
+            s_trayIcon.Text = "Phone connected";
+            s_widgetForm.Invoke(() =>
             {
-                var level = match.Groups[1].Value;
-                if (int.Parse(level) < WarnAtChargePercent)
-                {
-                    s_blinkTimer.Stop();
-                    s_trayIcon.Text = $"Android Battery: {level}%";
-                    s_widgetForm.BatteryLabel.Text = $"Battery: {level}%";
-                }
-                else
-                {
-                    if (!s_blinkTimer.Enabled)
-                    {
-                        s_blinkTimer.Start();
-                    }
-                    s_widgetForm.BatteryLabel.ForeColor = Color.Red;
-                    s_trayIcon.Text = $"Sufficiently charged: {level}%";
-                    s_widgetForm.BatteryLabel.Text = $"Charged: {level}%";
-                }
-            }
-            else
-            {
-                if (s_blinkTimer.Enabled)
-                {
-                    s_blinkTimer.Stop();
-                }
-                s_trayIcon.Icon = s_disconnectedIcon;
-                s_trayIcon.Text = "Battery info not found";
-                s_widgetForm.BatteryLabel.Text = $"Battery: --";
-            }
-        }
-        catch (Exception ex)
-        {
-            s_trayIcon.Icon = s_disconnectedIcon;
-            s_trayIcon.Text = "ADB error / phone not connected";
-            s_widgetForm.BatteryLabel.Text = $"Disconnected";
-            Console.WriteLine($"Error: {ex.Message}");
-        }
-    }
-
-    static string RunAdb(string arguments)
-    {
-        var adbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "lib", "adb.exe");
-        if (!File.Exists(adbPath))
-        {
-            throw new FileNotFoundException("Bundled ADB executable not found.", adbPath);
-        }
-
-        var startInfo = new ProcessStartInfo(adbPath, arguments)
-        {
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
+                s_trayIcon.Icon = s_chargingIcon;
+                s_trayIcon.Text = "Phone connected";
+                s_widgetForm.BatteryLabel.Text = "Connected...";
+                s_widgetForm.BatteryLabel.ForeColor = Color.White;
+            });
+            s_widgetForm.BatteryLabel.ForeColor = Color.White;
         };
 
-        using var process = Process.Start(startInfo);
-        return process.StandardOutput.ReadToEnd();
+        s_monitor.DeviceDisconnected += () =>
+        {
+            s_widgetForm.Invoke(() =>
+            {
+                s_trayIcon.Icon = s_disconnectedIcon;
+                s_trayIcon.Text = "Phone disconnected";
+                s_widgetForm.BatteryLabel.Text = "Disconnected";
+                s_widgetForm.BatteryLabel.ForeColor = Color.Gray;
+            });
+            s_blinkTimer.Stop();
+        };
+
+        s_monitor.BatteryLevelUpdated += level =>
+        {
+            s_blinkTimer.Stop();
+            s_widgetForm.Invoke(() =>
+            {
+                s_trayIcon.Icon = s_chargingIcon;
+            s_trayIcon.Text = $"Battery: {level}%";
+            s_widgetForm.BatteryLabel.Text = $"Battery: {level}%";
+            s_widgetForm.BatteryLabel.ForeColor = Color.White;
+            });
+        };
+
+        s_monitor.WarnThresholdCrossed += level =>
+        {
+            s_blinkTimer.Start();
+            s_widgetForm.Invoke(() =>
+            {
+                s_widgetForm.BatteryLabel.Text = $"Charged: {level}%";
+            s_widgetForm.BatteryLabel.ForeColor = Color.Red;
+            s_trayIcon.Text = $"Charged: {level}%";
+            });
+        };
+
+        s_monitor.Start();
+
+        Application.Run();
     }
 }

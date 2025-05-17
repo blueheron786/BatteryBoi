@@ -20,11 +20,11 @@ public class BatteryWidgetForm : Form
         FormBorderStyle = FormBorderStyle.None;
         TopMost = true;
         BackColor = Color.Black;
-        ForeColor = Color.FromArgb(255, 207, 72);
+        ForeColor = Color.Gray;
         Opacity = 0.85;
         StartPosition = FormStartPosition.Manual;
         Location = new Point(100, 100);
-        Size = new Size(120, 40);
+        Size = new Size(160, 40);
 
         BatteryLabel = new Label
         {
