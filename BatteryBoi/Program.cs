@@ -4,11 +4,9 @@ namespace BatteryBoi;
 
 class BatteryTrayApp
 {
-    private const int WarnAtChargePercent = 80;
     private const int BlinkInterval = 500;
 
     private static NotifyIcon s_trayIcon;
-    private static Timer s_pollTimer;
     private static Timer s_blinkTimer;
     private static BatteryWidgetForm s_widgetForm;
 
