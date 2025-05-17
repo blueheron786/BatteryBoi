@@ -72,11 +72,18 @@ class BatteryTrayApp
 
     static string RunAdb(string arguments)
     {
-        var startInfo = new ProcessStartInfo("adb", arguments)
+        var adbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "lib", "adb.exe");
+        if (!File.Exists(adbPath))
         {
-            RedirectStandardOutput = true,
+            throw new FileNotFoundException("Bundled ADB executable not found.", adbPath);
+        }
+
+        var startInfo = new ProcessStartInfo(adbPath, arguments)
+        {
             UseShellExecute = false,
-            CreateNoWindow = true
+            CreateNoWindow = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
         };
 
         using var process = Process.Start(startInfo);

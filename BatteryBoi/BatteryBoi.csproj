@@ -12,6 +12,12 @@
     <None Include="battery-bolt.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-</ItemGroup>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="lib/*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 
 </Project>
